@@ -72,7 +72,7 @@ def procesar_pdfs(carpeta_entrada, carpeta_salida, texto_marca):
 if __name__ == "__main__":
     carpeta_entrada = "documentos_originales"
     carpeta_salida = "documentos_marcados"
-    texto_marca = "texto de la marca de agua"
+    texto_marca = "entiendayaprenda.com"
 
     if texto_marca.strip() == "texto de la marca de agua":
         print(
