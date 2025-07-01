@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # Script en Python para agregar marcas de agua a PDFs.
 # Lee todos los archivos PDF de una carpeta de entrada,
