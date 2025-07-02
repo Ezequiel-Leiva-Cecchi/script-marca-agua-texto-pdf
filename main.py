@@ -16,9 +16,9 @@ def crear_marca_agua(texto):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     c.setFont("Helvetica", 18)
-    c.setFillColorRGB(0.09, 0.94, 0.92, alpha=0.50)  # Color con transparencia
+    c.setFillColorRGB(0.09, 0.94, 0.92, alpha=0.50) 
 
-    # Dibujamos el texto repetido en diagonal en distintas posiciones
+
     for y in range(-200, 1000, 400):
         for x in range(-200, 800, 130):
             c.saveState()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     carpeta_salida = "documentos_marcados"
     texto_marca = "entiendayaprenda.com"
 
-    if texto_marca.strip() == "texto de la marca de agua":
+    if texto_marca.strip() == "entiendayaprenda.com":
         print(
             "ATENCIÓN: Estás usando el texto de marca de agua por defecto. Modificalo si es necesario.\n"
         )
