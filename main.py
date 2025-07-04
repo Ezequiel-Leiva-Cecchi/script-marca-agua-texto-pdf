@@ -73,10 +73,3 @@ if __name__ == "__main__":
     carpeta_entrada = "documentos_originales"
     carpeta_salida = "documentos_marcados"
     texto_marca = "entiendayaprenda.com"
-
-    if texto_marca.strip() == "entiendayaprenda.com":
-        print(
-            "ATENCIÓN: Estás usando el texto de marca de agua por defecto. Modificalo si es necesario.\n"
-        )
-
-    procesar_pdfs(carpeta_entrada, carpeta_salida, texto_marca)
