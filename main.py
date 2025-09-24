@@ -29,10 +29,10 @@ def crear_marca_texto(texto_principal, texto_secundario, ancho, alto):
     # ---------------------------
     # Texto principal (link)
     # ---------------------------
-    font_size_link = 50  # <<-- Aumentado (más grande)
+    font_size_link = 80  # <<-- Aumentado (más grande)
     c.setFont("Helvetica-Bold", font_size_link)
     # <<-- Más opaco: color azul con alpha alto
-    c.setFillColor(Color(0.0, 0.7, 1.0, alpha=0.50))
+    c.setFillColor(Color(0.0, 0.7, 1.0, alpha=0.40))
 
     texto_y = 30
     c.drawCentredString(0, texto_y, texto_principal)
@@ -61,7 +61,7 @@ def crear_marca_texto(texto_principal, texto_secundario, ancho, alto):
     # ---------------------------
     # Texto secundario (mensaje)
     # ---------------------------
-    font_size_msg = 40  # ligeramente más grande también
+    font_size_msg = 47  # ligeramente más grande también
     c.setFont("Helvetica", font_size_msg)
     # más opaco para el secundario
     c.setFillColor(Color(0.0, 0.5, 1.0, alpha=0.50))
