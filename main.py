@@ -2,66 +2,72 @@
 # Script en Python para agregar marcas de agua a PDFs.
 # Lee todos los archivos PDF de una carpeta de entrada,
 # les aplica una marca de agua personalizada y los guarda en otra carpeta.
-# Autor: Ezequiel
+# Autor: Ezequiel (modificado: tamaño/opacidad de marca)
 # -------------------------------------------------------------------------
 
 import os
 from io import BytesIO
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-
+from reportlab.lib.colors import Color  # uso Color(...) para controlar alpha
 
 # -------------------------------------------------------------------------
-# Función: crear_marca_texto_sin_link
-# Descripción: Genera un PDF en memoria con una marca de agua en diagonal
-# que se repetirá sobre el documento original SIN ningún enlace.
+# Función: crear_marca_texto
+# Descripción: Genera un PDF en memoria con una marca de agua en diagonal,
+# centrada y grande, que se adapta al tamaño de cada página.
+# El texto principal es un hipervínculo clickeable (ajustado por letra).
 # -------------------------------------------------------------------------
-def crear_marca_texto_sin_link(texto):
+def crear_marca_texto(texto_principal, texto_secundario, ancho, alto):
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    c.setFont("Helvetica", 18)
-    c.setFillColorRGB(0.09, 0.94, 0.92, alpha=0.50)
+    c = canvas.Canvas(buffer, pagesize=(ancho, alto))
+    c.saveState()
 
-    # Dibujar muchas marcas 
-    for y in range(-200, 1000, 400):
-        for x in range(-200, 800, 130):
-            c.saveState()
-            c.translate(x, y)
-            c.rotate(45)
-            c.drawString(0, 0, texto)
-            c.restoreState()
+    # 🔹 Trasladar y rotar al centro de la página
+    c.translate(ancho / 2, alto / 2)
+    c.rotate(45)
 
-    c.save()
-    buffer.seek(0)
-    return PdfReader(buffer)
+    # ---------------------------
+    # Texto principal (link)
+    # ---------------------------
+    font_size_link = 50  # <<-- Aumentado (más grande)
+    c.setFont("Helvetica-Bold", font_size_link)
+    # <<-- Más opaco: color azul con alpha alto
+    c.setFillColor(Color(0.0, 0.7, 1.0, alpha=0.50))
 
+    texto_y = 30
+    c.drawCentredString(0, texto_y, texto_principal)
 
-# -------------------------------------------------------------------------
-# Función: crear_link_individual
-# Descripción: Genera un PDF con un pequeño texto con hipervínculo
-# ubicado abajo a la derecha. Solo este texto será clickeable.
-# -------------------------------------------------------------------------
-def crear_link_individual(texto):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    c.setFont("Helvetica", 12)
-    c.setFillColorRGB(0.09, 0.94, 0.92, alpha=0.50)
+    # Calcular ancho total del texto
+    ancho_texto = c.stringWidth(texto_principal, "Helvetica-Bold", font_size_link)
 
-    x_link = 450
-    y_link = 50
-    ancho_link = c.stringWidth(texto, "Helvetica", 12)
-    alto_link = 12
+    # 🔹 Crear links por cada letra (más ajustado al texto real)
+    x_cursor = -ancho_texto / 2
+    for letra in texto_principal:
+        ancho_letra = c.stringWidth(letra, "Helvetica-Bold", font_size_link)
+        rect = (
+            x_cursor,
+            texto_y - font_size_link * 0.18,
+            x_cursor + ancho_letra,
+            texto_y + font_size_link * 0.72,
+        )
+        c.linkURL(
+            "https://entiendayaprenda.com",
+            rect=rect,
+            relative=1,  # relativo al sistema de coordenadas rotado
+            thickness=0,
+        )
+        x_cursor += ancho_letra
 
-    c.drawString(x_link, y_link, texto)
+    # ---------------------------
+    # Texto secundario (mensaje)
+    # ---------------------------
+    font_size_msg = 40  # ligeramente más grande también
+    c.setFont("Helvetica", font_size_msg)
+    # más opaco para el secundario
+    c.setFillColor(Color(0.0, 0.5, 1.0, alpha=0.50))
+    c.drawCentredString(0, -60, texto_secundario)
 
-    c.linkURL(
-        "https://entiendayaprenda.com",
-        rect=(x_link, y_link, x_link + ancho_link, y_link + alto_link),
-        relative=0,
-        thickness=0,
-    )
-
+    c.restoreState()
     c.save()
     buffer.seek(0)
     return PdfReader(buffer)
@@ -69,19 +75,20 @@ def crear_link_individual(texto):
 
 # -------------------------------------------------------------------------
 # Función: aplicar_marca
-# Descripción: Superpone dos capas sobre cada página del PDF de entrada:
-# - una con marcas de agua en diagonal sin links
-# - otra con un único texto clickeable en la esquina
+# Descripción: Superpone sobre cada página del PDF de entrada:
+# - una marca de agua diagonal central con link
 # -------------------------------------------------------------------------
-def aplicar_marca(pdf_entrada, pdf_salida, marca_texto, marca_link):
+def aplicar_marca(pdf_entrada, pdf_salida, texto_marca):
     lector = PdfReader(pdf_entrada)
     escritor = PdfWriter()
-
+    mensaje = "¡Aprendé con los mejores profes particulares!"
     for pagina in lector.pages:
+        ancho = float(pagina.mediabox.width)
+        alto = float(pagina.mediabox.height)
+        # Marca de agua diagonal central con link
+        marca_texto = crear_marca_texto(texto_marca, mensaje, ancho, alto)
         pagina.merge_page(marca_texto.pages[0])
-        pagina.merge_page(marca_link.pages[0])
         escritor.add_page(pagina)
-
     with open(pdf_salida, "wb") as salida:
         escritor.write(salida)
 
@@ -101,23 +108,15 @@ def procesar_pdfs(carpeta_entrada, carpeta_salida, texto_marca):
     if not os.path.exists(carpeta_salida):
         os.makedirs(carpeta_salida)
 
-    marca_texto = crear_marca_texto_sin_link(texto_marca)
-    marca_link = crear_link_individual(texto_marca)
-
-    # Contador para archivos procesados
     archivos_procesados = 0
 
     # Recorrer recursivamente todas las carpetas y subcarpetas
     for ruta_actual, subcarpetas, archivos in os.walk(carpeta_entrada):
-        # Calcular la ruta relativa desde la carpeta de entrada
         ruta_relativa = os.path.relpath(ruta_actual, carpeta_entrada)
-        
-        # Crear la carpeta correspondiente en la salida
         carpeta_salida_actual = os.path.join(carpeta_salida, ruta_relativa)
         if not os.path.exists(carpeta_salida_actual):
             os.makedirs(carpeta_salida_actual)
 
-        # Procesar archivos PDF en la carpeta actual
         archivos_pdf = [f for f in archivos if f.lower().endswith(".pdf")]
         
         for archivo in archivos_pdf:
@@ -125,7 +124,7 @@ def procesar_pdfs(carpeta_entrada, carpeta_salida, texto_marca):
             ruta_salida = os.path.join(carpeta_salida_actual, archivo)
             
             try:
-                aplicar_marca(ruta_entrada, ruta_salida, marca_texto, marca_link)
+                aplicar_marca(ruta_entrada, ruta_salida, texto_marca)
                 archivos_procesados += 1
                 print(f"Procesado: {os.path.join(ruta_relativa, archivo)}")
             except Exception as e:
